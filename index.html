@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EV Charge Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7fdfe;
+  --surface: #ffffff;
+  --surface2: #e8f9fc;
+  --border: #b2e8f0;
+  --green: #06b6d4;
+  --green-dark: #0891b2;
+  --green-light: #e0f7fa;
+  --text: #0c2a3a;
+  --muted: #3d8fa0;
+  --faint: #7ecfda;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --card-bg: #0d3344;
+  --card-bg2: rgba(255,255,255,0.07);
+  --shadow: 0 1px 12px rgba(13,51,68,0.09);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d3344;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light zone starts after header */
+.light-zone {
+  background: var(--bg);
+  border-radius: 28px 28px 0 0;
+  padding: 20px 0 calc(90px + env(safe-area-inset-bottom));
+  min-height: 70vh;
+}
+
+/* ── Layout ── */
+.container {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ── Header ── */
+.header {
+  padding: calc(env(safe-area-inset-top, 12px) + 16px) 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-icon {
+  width: 46px;
+  height: 46px;
+  background: var(--green);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(6,182,212,0.45);
+}
+
+.header-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
+}
+
+.header-text h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.header-text p {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.55);
+  margin-top: 2px;
+  letter-spacing: 0.1px;
+}
+
+/* ── Car Card ── */
+.car-card {
+  background: var(--card-bg);
+  border-radius: 22px;
+  padding: 22px 20px;
+  margin-bottom: 12px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.car-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.car-card-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 18px;
+}
+
+/* Battery Row */
+.battery-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.battery-info { display: flex; flex-direction: column; gap: 2px; }
+
+.battery-label {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.2px;
+}
+
+.battery-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: -1px;
+}
+
+.battery-unit {
+  font-size: 16px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.45);
+  margin-left: 3px;
+}
+
+.battery-visual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.battery-shell {
+  width: 54px;
+  height: 26px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 5px;
+  padding: 3px;
+  position: relative;
+}
+
+.battery-shell::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 9px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 0 2px 2px 0;
+}
+
+.battery-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
+.battery-pct-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
+  letter-spacing: -0.5px;
+}
+
+/* Slider */
+.slider-row {
+  margin-bottom: 6px;
+}
+
+.slider-row input[type="range"] {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.15);
+  border-radius: 99px;
+  outline: none;
+  display: block;
+}
+
+.slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--green);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2.5px solid white;
+  box-shadow: 0 2px 8px rgba(6,182,212,0.4);
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 18px;
+  padding: 0 2px;
+}
+
+/* Mini fields */
+.mini-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mini-field {
+  background: var(--card-bg2);
+  border-radius: 12px;
+  padding: 12px 13px;
+  min-width: 0;
+}
+
+.mini-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 7px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-input-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mini-input-wrap input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  width: 0;
+  flex: 1;
+  min-width: 0;
+  letter-spacing: -0.5px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* time input special — needs enough room */
+.mini-input-wrap input[type="time"] {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.mini-unit {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.35);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 14px 0;
+}
+
+/* ── Section card ── */
+.section-card {
+  background: var(--surface);
+  border-radius: 22px;
+  padding: 18px 18px 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+/* ── Tab Switcher ── */
+.tab-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--surface2);
+  border-radius: 14px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 11px;
+  transition: all 0.18s;
+  user-select: none;
+  letter-spacing: 0.1px;
+}
+
+.tab-btn.active {
+  background: white;
+  color: var(--text);
+  box-shadow: 0 1px 5px rgba(15,26,15,0.1);
+}
+
+.tab-btn .tab-icon {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+/* ── Tab Content ── */
+.tab-content { display: none; }
+.tab-content.active {
+  display: block;
+  animation: fadeUp 0.22s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Result Display ── */
+.result-display {
+  background: var(--green-light);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.result-display.empty { background: var(--surface2); }
+
+.result-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green-dark);
+  margin-bottom: 6px;
+}
+
+.result-display.empty .result-tag { color: var(--muted); }
+
+.result-big {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--green-dark);
+  letter-spacing: -1px;
+}
+
+.result-display.empty .result-big { color: var(--faint); }
+
+.result-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--green-dark);
+  margin-top: 5px;
+  opacity: 0.65;
+  letter-spacing: 0.2px;
+}
+
+.result-display.empty .result-unit { color: var(--muted); }
+
+/* ── Input Fields ── */
+.field { margin-bottom: 12px; }
+
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 6px;
+  letter-spacing: 0px;
+}
+
+/* All input-wrap: clip content, never let native UI poke out */
+.input-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.input-wrap input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 46px 13px 14px;
+  color: var(--text);
+  font-size: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  letter-spacing: -0.3px;
+  min-width: 0;
+  box-sizing: border-box;
+  /* iOS: prevent native time-picker arrow from widening the box */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-wrap input[type="time"] {
+  /* time inputs need text centered on iOS; keep padding normal */
+  padding-right: 14px;
+  text-align: left;
+}
+
+.input-wrap input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.18);
+  background: white;
+}
+
+.input-suffix {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--faint);
+  pointer-events: none;
+  letter-spacing: 0.3px;
+  /* hide suffix on time inputs handled via padding */
+}
+
+/* ── Dual field — no overflow ── */
+.dual-field {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dual-field .input-wrap {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dual-field .input-wrap input {
+  padding-right: 40px;
+}
+
+/* ── Finish badge ── */
+.finish-badge {
+  display: none;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 13px 14px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.finish-badge .badge-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.finish-badge .badge-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 3px;
+  letter-spacing: -1px;
+}
+
+/* ── Stats row ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat-pill {
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 13px 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stat-pill .s-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-pill .s-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  color: var(--text);
+  margin-top: 5px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Breaker row ── */
+.breaker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 12px 13px;
+  margin-bottom: 12px;
+}
+
+.breaker-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.breaker-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--green-dark);
+  letter-spacing: -0.3px;
+}
+
+/* ── Alerts ── */
+.alert {
+  display: none;
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.1px;
+}
+
+.alert.error {
+  background: #fef2f2;
+  color: var(--danger);
+  border: 1px solid #fecaca;
+}
+
+.alert.warn {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* ── Button ── */
+.calc-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 3px 12px rgba(6,182,212,0.38);
+}
+
+.calc-btn:active {
+  transform: scale(0.98);
+  background: var(--green-dark);
+  box-shadow: none;
+}
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background: white;
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+  padding: 8px 0 calc(env(safe-area-inset-bottom, 8px) + 8px);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+  cursor: pointer;
+  transition: color 0.15s;
+  letter-spacing: 0.3px;
+}
+
+.nav-item.active { color: var(--green); }
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+</style>
+</head>
+<body>
+
+<div class="container" style="padding:0 16px;">
+
+  <!-- Header — lives on dark background -->
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24"><path d="M13 2L4.09 12.97A1 1 0 005 14.5h6.5L10 22l9.91-10.97A1 1 0 0019 9.5h-6.5L13 2z"/></svg>
+    </div>
+    <div class="header-text">
+      <h1>EV Charge Calculator</h1>
+      <p>AC 220V · Thailand Standard</p>
+    </div>
+  </div>
+
+</div><!-- /.container header -->
+
+<!-- Light zone: rounded top, holds all cards -->
+<div class="light-zone">
+<div class="container" style="padding:0 16px;">
+
+  <!-- Car Card -->
+  <div class="car-card">
+    <div class="car-card-label">Your Vehicle</div>
+
+    <div class="battery-row">
+      <div class="battery-info">
+        <div class="battery-label">Current Battery</div>
+        <div>
+          <span class="battery-value" id="battDisplay">35</span>
+          <span class="battery-unit">%</span>
+        </div>
+      </div>
+      <div class="battery-visual">
+        <div class="battery-shell">
+          <div class="battery-fill" id="battFill" style="width:35%"></div>
+        </div>
+        <div class="battery-pct-label" id="battPctLabel">35%</div>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <input type="range" id="currentPct" min="0" max="100" value="35">
+    </div>
+    <div class="slider-labels">
+      <span>0%</span><span>50%</span><span>100%</span>
+    </div>
+
+    <div class="mini-row">
+      <div class="mini-field">
+        <div class="mini-label">Battery Capacity</div>
+        <div class="mini-input-wrap">
+          <input type="number" id="capacity" value="60" min="1" max="200">
+          <span class="mini-unit">kWh</span>
+        </div>
+      </div>
+      <div class="mini-field">
+        <div class="mini-label">Target SoC</div>
+        <div class="mini-input-wrap">
+          <input type="number" id="targetPct" value="85" min="1" max="100">
+          <span class="mini-unit">%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="mini-field">
+      <div class="mini-label">Charge Start Time</div>
+      <div class="mini-input-wrap">
+        <input type="time" id="startTime" value="21:20">
+      </div>
+    </div>
+  </div>
+
+  <!-- Calculator Card -->
+  <div class="section-card">
+    <div class="section-label">Calculator</div>
+
+    <div class="tab-switcher">
+      <div class="tab-btn active" data-tab="current">
+        <span class="tab-icon">⚡</span>Current
+      </div>
+      <div class="tab-btn" data-tab="time">
+        <span class="tab-icon">⏱</span>Duration
+      </div>
+      <div class="tab-btn" data-tab="efficiency">
+        <span class="tab-icon">📊</span>Efficiency
+      </div>
+    </div>
+
+    <!-- Tab: Current -->
+    <div class="tab-content active" id="tab-current">
+      <div class="result-display empty" id="currentResultBox">
+        <div class="result-tag">Min. Current Required</div>
+        <div class="result-big" id="ampValue">—</div>
+        <div class="result-unit">Amperes (A)</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Finish Charging By</div>
+        <div class="input-wrap">
+          <input type="time" id="desiredEndTime" value="05:00">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Charger Efficiency</div>
+        <div class="input-wrap">
+          <input type="number" id="effCurrent" value="90" min="50" max="100">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+
+      <div class="breaker-row" id="breakerRow" style="display:none;">
+        <span class="breaker-label">Recommended Breaker</span>
+        <span class="breaker-value" id="breakerValue">— A</span>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="s-label">Energy Needed</div>
+          <div class="s-value" id="energyStat1">— kWh</div>
+        </div>
+        <div class="stat-pill">
+          <div class="s-label">Power Required</div>
+          <div class="s-value" id="powerStat1">— kW</div>
+        </div>
+      </div>
+
+      <div class="alert error" id="errCurrent"></div>
+      <div class="alert warn" id="warnCurrent"></div>
+
+      <button class="calc-btn" onclick="calculateCurrent()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L4.09 12.97A1 1 0 005 14.5h6.5L10 22l9.91-10.97A1 1 0 0019 9.5h-6.5L13 2z"/></svg>
+        Calculate Current
+      </button>
+    </div>
+
+    <!-- Tab: Duration -->
+    <div class="tab-content" id="tab-time">
+      <div class="result-display empty" id="timeResultBox">
+        <div class="result-tag">Charging Duration</div>
+        <div class="result-big" id="timeValue">—</div>
+        <div class="result-unit" id="timeUnit">hrs</div>
+      </div>
+
+      <div class="finish-badge" id="finishBadge">
+        <div class="badge-label">Estimated Finish</div>
+        <div class="badge-time" id="finishTime">—</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Charging Current</div>
+        <div class="input-wrap">
+          <input type="number" id="setAmps" value="16" min="1" max="63">
+          <span class="input-suffix">A</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Charger Efficiency</div>
+        <div class="input-wrap">
+          <input type="number" id="effTime" value="90" min="50" max="100">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="s-label">Energy Needed</div>
+          <div class="s-value" id="energyStat2">— kWh</div>
+        </div>
+        <div class="stat-pill">
+          <div class="s-label">Power Output</div>
+          <div class="s-value" id="powerStat2">— kW</div>
+        </div>
+      </div>
+
+      <div class="alert error" id="errTime"></div>
+      <div class="alert warn" id="warnTime"></div>
+
+      <button class="calc-btn" onclick="calculateTime()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Calculate Duration
+      </button>
+    </div>
+
+    <!-- Tab: Efficiency -->
+    <div class="tab-content" id="tab-efficiency">
+      <div class="result-display empty" id="effResultBox">
+        <div class="result-tag">Charger Efficiency</div>
+        <div class="result-big" id="effValue">—</div>
+        <div class="result-unit">%</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Charging Current</div>
+        <div class="input-wrap">
+          <input type="number" id="setAmpsEff" value="16" min="1" max="63">
+          <span class="input-suffix">A</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Actual Charge Duration</div>
+        <div class="dual-field">
+          <div class="input-wrap">
+            <input type="number" id="hours" value="6" min="0" max="24">
+            <span class="input-suffix">hrs</span>
+          </div>
+          <div class="input-wrap">
+            <input type="number" id="minutes" value="30" min="0" max="59">
+            <span class="input-suffix">min</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="s-label">Energy Needed</div>
+          <div class="s-value" id="energyStat3">— kWh</div>
+        </div>
+        <div class="stat-pill">
+          <div class="s-label">Energy from Grid</div>
+          <div class="s-value" id="powerStat3">— kWh</div>
+        </div>
+      </div>
+
+      <div class="alert error" id="errEff"></div>
+      <div class="alert warn" id="warnEff"></div>
+
+      <button class="calc-btn" onclick="calculateEfficiency()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Calculate Efficiency
+      </button>
+    </div>
+
+  </div>
+
+</div><!-- /.container inner -->
+</div><!-- /.light-zone -->
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav">
+  <div class="nav-item active" data-tab="current">
+    <div class="nav-icon">
+      <svg viewBox="0 0 24 24"><path d="M13 2L4.09 12.97A1 1 0 005 14.5h6.5L10 22l9.91-10.97A1 1 0 0019 9.5h-6.5L13 2z"/></svg>
+    </div>
+    Current
+  </div>
+  <div class="nav-item" data-tab="time">
+    <div class="nav-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    Duration
+  </div>
+  <div class="nav-item" data-tab="efficiency">
+    <div class="nav-icon">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+    Efficiency
+  </div>
+</div>
+
+<script>
+const VOLTAGE = 220;
+const slider = document.getElementById('currentPct');
+
+function updateBattery(val) {
+  document.getElementById('battDisplay').textContent = val;
+  document.getElementById('battPctLabel').textContent = val + '%';
+  document.getElementById('battFill').style.width = val + '%';
+}
+slider.addEventListener('input', () => updateBattery(slider.value));
+
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll(`[data-tab="${tabName}"]`).forEach(el => el.classList.add('active'));
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+}
+document.querySelectorAll('.tab-btn, .nav-item').forEach(el => {
+  el.addEventListener('click', () => switchTab(el.dataset.tab));
+});
+
+function getNetEnergy() {
+  const cap = parseFloat(document.getElementById('capacity').value) || 60;
+  const cur = parseFloat(slider.value) || 0;
+  const tgt = parseFloat(document.getElementById('targetPct').value) || 85;
+  return Math.max(0, cap * (tgt - cur) / 100);
+}
+
+function parseTime(str) {
+  const [h, m] = str.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function formatTime(totalMin) {
+  const norm = ((totalMin % 1440) + 1440) % 1440;
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function nextBreaker(a) {
+  const needed = a * 1.25;
+  const sizes = [6,10,16,20,25,32,40,50,63];
+  return sizes.find(s => s >= needed) || 63;
+}
+
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert ${type}`;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function setResultBox(boxId, value) {
+  document.getElementById(boxId).classList.toggle('empty', value === null);
+}
+
+function calculateCurrent() {
+  const energy = getNetEnergy();
+  showAlert('errCurrent','','error');
+  showAlert('warnCurrent','','warn');
+  if (energy <= 0) { showAlert('errCurrent','Target SoC must be higher than current battery level.','error'); return; }
+
+  const startMin = parseTime(document.getElementById('startTime').value);
+  let endMin = parseTime(document.getElementById('desiredEndTime').value);
+  if (endMin <= startMin) endMin += 1440;
+  const durationHrs = (endMin - startMin) / 60;
+  if (durationHrs <= 0) { showAlert('errCurrent','Invalid time range.','error'); return; }
+
+  const eff = (parseFloat(document.getElementById('effCurrent').value) || 90) / 100;
+  const wallEnergy = energy / eff;
+  const powerKW = wallEnergy / durationHrs;
+  const amps = Math.ceil((powerKW * 1000) / VOLTAGE);
+
+  document.getElementById('ampValue').textContent = amps;
+  document.getElementById('energyStat1').textContent = energy.toFixed(1) + ' kWh';
+  document.getElementById('powerStat1').textContent = powerKW.toFixed(2) + ' kW';
+  setResultBox('currentResultBox', amps);
+
+  const br = nextBreaker(amps);
+  document.getElementById('breakerValue').textContent = br + ' A';
+  document.getElementById('breakerRow').style.display = 'flex';
+
+  let warn = '';
+  if (amps > 32) warn = '⚠️ Current exceeds 32A — dedicated EVSE / Wall Charger required.';
+  else if (amps > 16) warn = '⚠️ Current over 16A — Wall Box required, standard socket not safe.';
+  else if (amps <= 6) warn = 'ℹ️ Low current — standard socket is fine but charging will be slow.';
+  if (durationHrs > 12) warn += (warn?'\n':'') + 'ℹ️ Long session (>12h) — verify wiring safety.';
+  if (eff < 0.85) warn += (warn?'\n':'') + 'ℹ️ Efficiency below 85% — may indicate charger issues.';
+  if (warn) showAlert('warnCurrent', warn, 'warn');
+}
+
+function calculateTime() {
+  const energy = getNetEnergy();
+  showAlert('errTime','','error');
+  showAlert('warnTime','','warn');
+  if (energy <= 0) { showAlert('errTime','Target SoC must be higher than current battery level.','error'); return; }
+
+  const amps = parseFloat(document.getElementById('setAmps').value) || 16;
+  const eff = (parseFloat(document.getElementById('effTime').value) || 90) / 100;
+  const powerKW = (amps * VOLTAGE) / 1000;
+  const totalHours = (energy / eff) / powerKW;
+  const h = Math.floor(totalHours);
+  const m = Math.round((totalHours - h) * 60);
+
+  document.getElementById('timeValue').textContent = `${h}:${String(m).padStart(2,'0')}`;
+  document.getElementById('timeUnit').textContent = 'hrs';
+  document.getElementById('energyStat2').textContent = energy.toFixed(1) + ' kWh';
+  document.getElementById('powerStat2').textContent = powerKW.toFixed(2) + ' kW';
+  setResultBox('timeResultBox', totalHours);
+
+  const startMin = parseTime(document.getElementById('startTime').value);
+  document.getElementById('finishTime').textContent = formatTime(startMin + Math.round(totalHours * 60));
+  document.getElementById('finishBadge').style.display = 'block';
+
+  if (totalHours > 12) showAlert('warnTime','ℹ️ Long charge session (>12h) — verify wiring safety.','warn');
+}
+
+function calculateEfficiency() {
+  const energy = getNetEnergy();
+  showAlert('errEff','','error');
+  showAlert('warnEff','','warn');
+  if (energy <= 0) { showAlert('errEff','Target SoC must be higher than current battery level.','error'); return; }
+
+  const amps = parseFloat(document.getElementById('setAmpsEff').value) || 16;
+  const hrs = parseFloat(document.getElementById('hours').value) || 0;
+  const mins = parseFloat(document.getElementById('minutes').value) || 0;
+  const totalHrs = hrs + mins / 60;
+  if (totalHrs <= 0) { showAlert('errEff','Please enter a valid duration.','error'); return; }
+
+  const powerKW = (amps * VOLTAGE) / 1000;
+  const wallEnergy = powerKW * totalHrs;
+  const effPct = Math.min(100, Math.round((energy / wallEnergy) * 100));
+
+  document.getElementById('effValue').textContent = effPct;
+  document.getElementById('energyStat3').textContent = energy.toFixed(1) + ' kWh';
+  document.getElementById('powerStat3').textContent = wallEnergy.toFixed(2) + ' kWh';
+  setResultBox('effResultBox', effPct);
+
+  if (effPct < 85) showAlert('warnEff','ℹ️ Efficiency below 85% — may indicate charger or wiring issue.','warn');
+  if (effPct > 99) showAlert('warnEff','⚠️ Efficiency over 99% — check input values.','warn');
+}
+
+setTimeout(() => calculateCurrent(), 300);
+</script>
+</body>
+</html>
